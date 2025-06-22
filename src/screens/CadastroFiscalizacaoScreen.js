@@ -17,8 +17,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useObras } from '../contexts/ObrasContext';
 import { getCurrentLocation, getAddressFromCoordinates } from '../services/location';
-import { takePhoto, selectFromGallery } from '../services/camera';
 import { formatDate } from '../utils/helpers';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CadastroFiscalizacaoScreen({ route, navigation }) {
@@ -67,39 +67,67 @@ export default function CadastroFiscalizacaoScreen({ route, navigation }) {
     }
   };
 
-  const mostrarOpcoesFoto = () => {
+ const requestCameraPermission = async () => {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
     Alert.alert(
-      'Adicionar Foto',
-      'Escolha uma opção:',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Câmera', onPress: tirarFoto },
-        { text: 'Galeria', onPress: selecionarDaGaleria },
-      ]
+      'Permissão necessária',
+      'É necessário permitir o acesso à câmera para tirar fotos das obras.'
     );
-  };
+    return false;
+  }
+  return true;
+};
 
-  const tirarFoto = async () => {
-    try {
-      const photo = await takePhoto();
-      if (photo) {
-        setFormData(prev => ({ ...prev, foto: photo }));
-      }
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível tirar a foto');
-    }
-  };
+const openCamera = async () => {
+  try {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
 
-  const selecionarDaGaleria = async () => {
-    try {
-      const photo = await selectFromGallery();
-      if (photo) {
-        setFormData(prev => ({ ...prev, foto: photo }));
-      }
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível selecionar a foto');
+    if (!result.canceled) {
+      setFormData(prev => ({ ...prev, foto: result.assets[0].uri }));
     }
-  };
+  } catch (error) {
+    Alert.alert('Erro', 'Não foi possível acessar a câmera.');
+  }
+};
+
+const openGallery = async () => {
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setFormData(prev => ({ ...prev, foto: result.assets[0].uri }));
+    }
+  } catch (error) {
+    Alert.alert('Erro', 'Não foi possível acessar a galeria.');
+  }
+};
+
+const mostrarOpcoesFoto = async () => {
+  const hasPermission = await requestCameraPermission();
+  if (!hasPermission) return;
+
+  Alert.alert(
+    'Adicionar Foto',
+    'Como você gostaria de adicionar uma foto?',
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Câmera', onPress: () => openCamera() },
+      { text: 'Galeria', onPress: () => openGallery() },
+    ]
+  );
+};
+
 
   const validarFormulario = () => {
     if (!formData.observacoes.trim()) {
