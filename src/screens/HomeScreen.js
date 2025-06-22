@@ -146,7 +146,7 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView  style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Minhas Obras</Text>
+        <Text style={styles.headerTitle}> Obras</Text>
         <Text style={styles.headerSubtitle}>
           {obras.length} {obras.length === 1 ? 'obra cadastrada' : 'obras cadastradas'}
         </Text>
